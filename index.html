@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="bn"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PDF Reader</title>
+<style>
+:root{--bg:#fff;--fg:#111;--bar:#eee;--ac:#2563eb}
+body.dark{--bg:#121212;--fg:#eee;--bar:#222}
+body.eye{--bg:#e8dcc0;--fg:#3b2f1e;--bar:#d9cba8}
+body.paper{--bg:#f6f0e0;--fg:#222;--bar:#ebe3cc}
+body.dark canvas{filter:invert(1) hue-rotate(180deg)}
+body.eye canvas{filter:sepia(.55) brightness(.93)}
+body.paper canvas{filter:sepia(.25) contrast(.95)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:15px system-ui}
+body{display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+header,footer{display:flex;gap:6px;align-items:center;padding:6px;background:var(--bar)}
+button,select,input{font:inherit;padding:7px 10px;border:1px solid #8886;border-radius:8px;background:var(--bg);color:var(--fg)}
+button.on{background:var(--ac);color:#fff}
+#stage{flex:1;overflow:auto;position:relative;text-align:center}
+canvas{width:100%;display:block}
+#guide{position:fixed;left:0;right:0;top:40%;height:44px;box-shadow:0 0 0 100vmax rgba(0,0,0,.55);border-block:2px solid var(--ac);touch-action:none;display:none;z-index:5}
+#dim{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:6}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:75%;overflow:auto;background:var(--bar);padding:12px;display:none;z-index:9;border-radius:16px 16px 0 0}
+.sheet.show{display:block}.sheet label{display:flex;justify-content:space-between;align-items:center;margin:8px 0}
+.bars{display:flex;gap:6px;align-items:flex-end;height:80px}.bars div{flex:1;background:var(--ac);border-radius:4px 4px 0 0;min-height:2px;font-size:10px;text-align:center}
+.lib button{display:block;width:100%;text-align:left;margin:4px 0}
+#pg{width:60px;text-align:center}
+</style></head><body>
+<header>
+ <button onclick="tog('lib')">📚</button>
+ <button onclick="tog('find')">🔍</button>
+ <button id="tText" onclick="setTool('text')">✏️ Text</button>
+ <button onclick="dl()">💾</button>
+ <button onclick="tog('set')" style="margin-left:auto">⚙️</button>
+</header>
+<div id="stage"><canvas id="cv"></canvas></div>
+<footer>
+ <button onclick="show(page-1)">◀</button>
+ <input id="pg" type="number" min="1" onchange="show(+this.value)"><span id="tot">/ 0</span>
+ <button onclick="show(page+1)">▶</button>
+ <span id="today" style="margin-left:auto;font-size:12px"></span>
+</footer>
+<div id="guide"></div><div id="dim"></div>
+
+<div class="sheet" id="lib"><input type="file" id="fi" accept="application/pdf" multiple onchange="addFiles(this.files)">
+ <p style="font-size:12px">একাধিক PDF select করুন, সব library-তে save থাকবে।</p><div class="lib" id="list"></div></div>
+
+<div class="sheet" id="find">
+ <input id="fq" placeholder="Find" style="width:100%"><br><br>
+ <input id="fr" placeholder="Replace with" style="width:100%"><br><br>
+ <button onclick="findNext()">Find next</button>
+ <button onclick="replaceAll()">Replace all</button>
+ <p id="fmsg" style="font-size:12px"></p></div>
+
+<div class="sheet" id="set">
+ <label>Mode <select id="mode" onchange="S.mode=this.value;apply()">
+  <option value="light">Light</option><option value="dark">Dark</option>
+  <option value="eye">Eye-comfort</option><option value="paper">Paper</option></select></label>
+ <label>Theme color <select id="ac" onchange="S.ac=this.value;apply()">
+  <option value="#2563eb">Blue</option><option value="#16a34a">Green</option>
+  <option value="#e11d48">Rose</option><option value="#9333ea">Purple</option></select></label>
+ <label>Dimming <input type="range" id="dimr" min="0" max="80" oninput="S.dim=this.value/100;apply()"></label>
+ <label>Line guide <input type="checkbox" id="gd" onchange="S.guide=this.checked;apply()"></label>
+ <label>Keep screen on <input type="checkbox" id="wk" onchange="S.wake=this.checked;apply()"></label>
+ <label>Daily goal (min) <input type="number" id="goal" style="width:80px" onchange="S.goal=+this.value;apply()"></label>
+ <b>Weekly reading</b><div class="bars" id="bars"></div>
+ <p id="gtxt"></p></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const $=i=>document.getElementById(i);
+let bytes,doc,page=1,name='',tool='',vp1,hits=[],hi=-1,lock;
+const S=Object.assign({mode:'light',ac:'#2563eb',dim:0,goal:20,wake:false,guide:false},JSON.parse(localStorage.s||'{}'));
+let T=JSON.parse(localStorage.t||'{}');
+const day=d=>d.toISOString().slice(0,10);
+
+// ---------- storage (IndexedDB) ----------
+const idb=new Promise(r=>{const q=indexedDB.open('pdfs',1);q.onupgradeneeded=()=>q.result.createObjectStore('f');q.onsuccess=()=>r(q.result)});
+const dbp=async(m,...a)=>{const d=await idb;return new Promise(r=>{const o=d.transaction('f',/^get/.test(m)?'readonly':'readwrite').objectStore('f')[m](...a);o.onsuccess=()=>r(o.result)})};
+async function addFiles(fs){for(const f of fs)await dbp('put',new Uint8Array(await f.arrayBuffer()),f.name);await list();if(fs.length==1)openPdf(fs[0].name)}
+async function list(){const k=await dbp('getAllKeys');$('list').innerHTML='';k.forEach(n=>{const b=document.createElement('button');b.textContent='📄 '+n+'  (p.'+(localStorage['p_'+n]||1)+')';b.onclick=()=>openPdf(n);$('list').append(b)})}
+
+// ---------- viewer ----------
+async function openPdf(n){name=n;bytes=await dbp('get',n);page=+localStorage['p_'+n]||1;await load();tog()}
+async function load(){doc=await pdfjsLib.getDocument({data:bytes.slice()}).promise;$('tot').textContent='/ '+doc.numPages;show(page)}
+async function show(n){if(!doc)return;page=Math.max(1,Math.min(doc.numPages,n||1));
+ const p=await doc.getPage(page);vp1=p.getViewport({scale:1});
+ const sc=$('stage').clientWidth/vp1.width,dpr=devicePixelRatio||1,vp=p.getViewport({scale:sc*dpr});
+ cv.width=vp.width;cv.height=vp.height;
+ await p.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+ $('pg').value=page;localStorage['p_'+name]=page;$('stage').scrollTop=0}
+let sx=0;stage.ontouchstart=e=>sx=e.touches[0].clientX;
+stage.ontouchend=e=>{if(Math.abs(e.changedTouches[0].clientX-sx)>70)show(page+(e.changedTouches[0].clientX<sx?1:-1))};
+
+// ---------- editing ----------
+async function edit(fn){const d=await PDFLib.PDFDocument.load(bytes);const f=await d.embedFont(PDFLib.StandardFonts.Helvetica);await fn(d,f);bytes=await d.save();await dbp('put',bytes,name);await load()}
+function setTool(t){tool=tool==t?'':t;$('tText').classList.toggle('on',tool=='text')}
+cv.onclick=e=>{if(tool!='text'||!doc)return;const r=cv.getBoundingClientRect();
+ const x=(e.clientX-r.left)/r.width*vp1.width,y=vp1.height-(e.clientY-r.top)/r.height*vp1.height;
+ const t=prompt('Text লিখুন');if(!t)return;
+ edit(async(d,f)=>d.getPage(page-1).drawText(t,{x,y,size:14,font:f,color:PDFLib.rgb(0,0,0)}))};
+function dl(){if(!bytes)return;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));a.download='edited_'+name;a.click()}
+
+// ---------- find & replace ----------
+async function scan(q){const out=[];for(let i=1;i<=doc.numPages;i++){const tc=await(await doc.getPage(i)).getTextContent();
+ tc.items.forEach(it=>{if(it.str.toLowerCase().includes(q.toLowerCase()))out.push({page:i,it})})}return out}
+async function findNext(){if(!doc)return;const q=fq.value;if(!q)return;
+ hits=await scan(q);if(!hits.length){fmsg.textContent='পাওয়া যায়নি';return}
+ hi=(hi+1)%hits.length;fmsg.textContent=`${hi+1} / ${hits.length}`;show(hits[hi].page)}
+async function replaceAll(){const q=fq.value,r=fr.value;if(!doc||!q)return;
+ const hs=await scan(q);if(!hs.length){fmsg.textContent='পাওয়া যায়নি';return}
+ await edit(async(d,f)=>{const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+  hs.forEach(({page:pn,it})=>{const pg=d.getPage(pn-1),[a,b,c,h,x,y]=it.transform,sz=Math.abs(h)||10;
+   pg.drawRectangle({x,y:y-sz*.25,width:it.width,height:sz*1.2,color:PDFLib.rgb(1,1,1)});
+   pg.drawText(it.str.replace(re,r),{x,y,size:sz,font:f})})});
+ fmsg.textContent=hs.length+'টি replace হয়েছে'}
+
+// ---------- settings, dim, guide, wake lock ----------
+async function apply(){localStorage.s=JSON.stringify(S);
+ document.body.className=S.mode;document.documentElement.style.setProperty('--ac',S.ac);
+ dim.style.opacity=S.dim;guide.style.display=S.guide?'block':'none';
+ mode.value=S.mode;ac.value=S.ac;dimr.value=S.dim*100;gd.checked=S.guide;wk.checked=S.wake;goal.value=S.goal;
+ try{if(S.wake&&navigator.wakeLock&&!document.hidden)lock=await navigator.wakeLock.request('screen');else if(lock){lock.release();lock=null}}catch(e){}
+ stats()}
+document.onvisibilitychange=()=>{if(!document.hidden)apply()};
+guide.onpointerdown=e=>{guide.setPointerCapture(e.pointerId);guide.onpointermove=m=>guide.style.top=(m.clientY-22)+'px'};
+guide.onpointerup=()=>guide.onpointermove=null;
+
+// ---------- reading time ----------
+setInterval(()=>{if(doc&&!document.hidden){const k=day(new Date());T[k]=(T[k]||0)+1;localStorage.t=JSON.stringify(T);stats()}},1000);
+function stats(){const k=day(new Date()),m=Math.floor((T[k]||0)/60);
+ $('today').textContent=`আজ ${m}/${S.goal} মিনিট`;
+ if(!$('set').classList.contains('show'))return;
+ let h='',tot=0;const v=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const s=T[day(d)]||0;tot+=s;v.push([d.toLocaleDateString('en',{weekday:'short'}),s])}
+ const mx=Math.max(...v.map(x=>x[1]),S.goal*60,1);
+ bars.innerHTML=v.map(x=>`<div style="height:${x[1]/mx*100}%">${Math.round(x[1]/60)}<br>${x[0]}</div>`).join('');
+ gtxt.textContent=`এই সপ্তাহে মোট ${Math.round(tot/60)} মিনিট • Goal ${m>=S.goal?'✅ পূর্ণ':'চলছে'}`}
+function tog(id){document.querySelectorAll('.sheet').forEach(s=>s.id==id?s.classList.toggle('show'):s.classList.remove('show'));stats();if(id=='lib')list()}
+
+// ---------- start ----------
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+apply();list();
+dbp('getAllKeys').then(async k=>{const l=localStorage.last;if(l&&k.includes(l))openPdf(l)});
+setInterval(()=>{if(name)localStorage.last=name},2000);
+</script></body></html>
