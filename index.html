@@ -1,49 +1,98 @@
 <!DOCTYPE html>
 <html lang="bn"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>PDF Reader</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bookshelf">
+<meta name="theme-color" content="#6366f1">
+<link rel="manifest" href="manifest.json">
+<title>Bookshelf</title>
 <style>
-:root{--bg:#fff;--fg:#111;--bar:#eee;--ac:#2563eb}
-body.dark{--bg:#121212;--fg:#eee;--bar:#222}
-body.eye{--bg:#e8dcc0;--fg:#3b2f1e;--bar:#d9cba8}
-body.paper{--bg:#f6f0e0;--fg:#222;--bar:#ebe3cc}
-body.dark canvas{filter:invert(1) hue-rotate(180deg)}
-body.eye canvas{filter:sepia(.55) brightness(.93)}
-body.paper canvas{filter:sepia(.25) contrast(.95)}
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:15px system-ui}
+:root{--bg:#f5f5f7;--fg:#111;--bar:#fff;--ac:#6366f1;--card:#fff;--mut:#777}
+body.dark{--bg:#0d0d10;--fg:#eee;--bar:#1c1c20;--card:#1c1c20;--mut:#999}
+body.eye{--bg:#e8dcc0;--fg:#3b2f1e;--bar:#d9cba8;--card:#efe4c8;--mut:#6b5a40}
+body.paper{--bg:#f6f0e0;--fg:#222;--bar:#ebe3cc;--card:#fbf6e8;--mut:#777}
+body.dark #cv{filter:invert(1) hue-rotate(180deg)}
+body.eye #cv{filter:sepia(.55) brightness(.93)}
+body.paper #cv{filter:sepia(.25) contrast(.95)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font:15px system-ui,-apple-system,sans-serif}
 body{display:flex;flex-direction:column;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
-header,footer{display:flex;gap:6px;align-items:center;padding:6px;background:var(--bar)}
-button,select,input{font:inherit;padding:7px 10px;border:1px solid #8886;border-radius:8px;background:var(--bg);color:var(--fg)}
+button,select,input{font:inherit;padding:7px 10px;border:1px solid #8886;border-radius:10px;background:var(--bg);color:var(--fg)}
 button.on{background:var(--ac);color:#fff}
+/* home */
+#home{flex:1;overflow:auto;padding:18px 16px 40px}
+.top{display:flex;align-items:center;gap:10px}
+.top svg{width:44px;height:44px;border-radius:11px;box-shadow:0 4px 12px #6366f166}
+.top h1{margin:0;font-size:30px;flex:1;letter-spacing:-.5px}
+.round{width:40px;height:40px;border-radius:50%;padding:0;font-size:18px;background:var(--card);border:0;box-shadow:0 2px 8px #0002}
+.chip{display:inline-block;margin:12px 0 0;padding:5px 12px;border-radius:20px;background:var(--card);font-size:12px;color:var(--mut);box-shadow:0 1px 4px #0002}
+h2{font-size:20px;margin:26px 0 12px}
+.hero{display:flex;gap:16px;background:var(--card);border-radius:22px;padding:16px;margin-top:18px;box-shadow:0 8px 28px #0003;cursor:pointer}
+.hero .cv{width:96px;flex:none}
+.hi{display:flex;flex-direction:column;gap:6px;justify-content:center;min-width:0;flex:1}
+.hi small{color:var(--ac);font-weight:700;letter-spacing:1px;font-size:11px}
+.hi b{font-size:17px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.hi span{color:var(--mut);font-size:13px}
+.hi button{background:var(--ac);color:#fff;border:0;align-self:flex-start;margin-top:4px;border-radius:20px;padding:8px 16px}
+.pb{height:5px;background:#8883;border-radius:5px;overflow:hidden}.pb i{display:block;height:100%;background:var(--ac)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:22px 16px}
+.book{position:relative;cursor:pointer}
+.cv{position:relative;aspect-ratio:3/4;border-radius:3px 9px 9px 3px;overflow:hidden;box-shadow:0 8px 18px #0004;background:linear-gradient(135deg,#6366f1,#a855f7);display:flex;align-items:center;justify-content:center;font-size:34px}
+.cv img{width:100%;height:100%;object-fit:cover;display:block}
+.cv::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#0005 0,#fff4 3%,#0001 6%,transparent 12%);pointer-events:none}
+.book .t{font-size:12px;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.book .p{font-size:11px;color:var(--mut)}
+.del{position:absolute;top:-6px;right:-6px;width:26px;height:26px;padding:0;border-radius:50%;font-size:12px;background:var(--card);border:0;box-shadow:0 2px 6px #0004;z-index:2}
+.empty{text-align:center;padding:60px 20px;color:var(--mut)}
+.empty svg{width:96px;height:96px;border-radius:24px;box-shadow:0 10px 30px #6366f155}
+.empty button{background:var(--ac);color:#fff;border:0;border-radius:24px;padding:12px 24px;margin-top:18px;font-size:16px}
+/* reader */
+#reader{display:none;flex:1;flex-direction:column;min-height:0}
+header,footer{display:flex;gap:6px;align-items:center;padding:6px;background:var(--bar)}
+#ttl{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600;padding:0 4px}
 #stage{flex:1;overflow:auto;position:relative;text-align:center}
-canvas{width:100%;display:block}
+#cv{width:100%;display:block}
+#pg{width:60px;text-align:center}
 #guide{position:fixed;left:0;right:0;top:40%;height:44px;box-shadow:0 0 0 100vmax rgba(0,0,0,.55);border-block:2px solid var(--ac);touch-action:none;display:none;z-index:5}
 #dim{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;z-index:6}
-.sheet{position:fixed;left:0;right:0;bottom:0;max-height:75%;overflow:auto;background:var(--bar);padding:12px;display:none;z-index:9;border-radius:16px 16px 0 0}
-.sheet.show{display:block}.sheet label{display:flex;justify-content:space-between;align-items:center;margin:8px 0}
-.bars{display:flex;gap:6px;align-items:flex-end;height:80px}.bars div{flex:1;background:var(--ac);border-radius:4px 4px 0 0;min-height:2px;font-size:10px;text-align:center}
-.lib button{display:block;width:100%;text-align:left;margin:4px 0}
-#pg{width:60px;text-align:center}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:75%;overflow:auto;background:var(--bar);padding:14px;display:none;z-index:9;border-radius:18px 18px 0 0;box-shadow:0 -6px 24px #0004}
+.sheet.show{display:block}.sheet label{display:flex;justify-content:space-between;align-items:center;margin:10px 0}
+.bars{display:flex;gap:6px;align-items:flex-end;height:90px}.bars div{flex:1;background:var(--ac);border-radius:4px 4px 0 0;min-height:2px;font-size:10px;text-align:center;color:#fff}
+#toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:#000c;color:#fff;padding:8px 16px;border-radius:20px;display:none;z-index:20}
 </style></head><body>
-<header>
- <button onclick="tog('lib')">📚</button>
- <button onclick="tog('find')">🔍</button>
- <button id="tText" onclick="setTool('text')">✏️ Text</button>
- <button onclick="dl()">💾</button>
- <button onclick="tog('set')" style="margin-left:auto">⚙️</button>
-</header>
-<div id="stage"><canvas id="cv"></canvas></div>
-<footer>
- <button onclick="show(page-1)">◀</button>
- <input id="pg" type="number" min="1" onchange="show(+this.value)"><span id="tot">/ 0</span>
- <button onclick="show(page+1)">▶</button>
- <span id="today" style="margin-left:auto;font-size:12px"></span>
-</footer>
-<div id="guide"></div><div id="dim"></div>
 
-<div class="sheet" id="lib"><input type="file" id="fi" accept="application/pdf" multiple onchange="addFiles(this.files)">
- <p style="font-size:12px">একাধিক PDF select করুন, সব library-তে save থাকবে।</p><div class="lib" id="list"></div></div>
+<!-- HOME / LOBBY -->
+<div id="home">
+ <div class="top"><span id="logo1"></span><h1>Bookshelf</h1>
+  <button class="round" onclick="$('fi').click()">＋</button>
+  <button class="round" onclick="tog('set')">⚙️</button></div>
+ <span class="chip" id="today2"></span>
+ <div id="heroBox"></div>
+ <h2 id="allH">আমার বই</h2>
+ <div class="grid" id="grid"></div>
+</div>
+
+<!-- READER -->
+<div id="reader">
+ <header>
+  <button onclick="closeBook()">‹</button><span id="ttl"></span>
+  <button onclick="tog('find')">🔍</button>
+  <button id="tText" onclick="setTool('text')">✏️</button>
+  <button onclick="dl()">💾</button>
+  <button onclick="tog('set')">⚙️</button>
+ </header>
+ <div id="stage"><canvas id="cv"></canvas></div>
+ <footer>
+  <button onclick="show(page-1)">◀</button>
+  <input id="pg" type="number" min="1" onchange="show(+this.value)"><span id="tot">/ 0</span>
+  <button onclick="show(page+1)">▶</button>
+  <span id="today" style="margin-left:auto;font-size:12px"></span>
+ </footer>
+</div>
+
+<input type="file" id="fi" accept="application/pdf" multiple hidden onchange="addFiles(this.files)">
+<div id="guide"></div><div id="dim"></div><div id="toast"></div>
 
 <div class="sheet" id="find">
  <input id="fq" placeholder="Find" style="width:100%"><br><br>
@@ -53,11 +102,12 @@ canvas{width:100%;display:block}
  <p id="fmsg" style="font-size:12px"></p></div>
 
 <div class="sheet" id="set">
+ <label>অ্যাপ খুললে শেষ বই থেকে শুরু <input type="checkbox" id="rs" onchange="S.resume=this.checked;apply()"></label>
  <label>Mode <select id="mode" onchange="S.mode=this.value;apply()">
   <option value="light">Light</option><option value="dark">Dark</option>
   <option value="eye">Eye-comfort</option><option value="paper">Paper</option></select></label>
  <label>Theme color <select id="ac" onchange="S.ac=this.value;apply()">
-  <option value="#2563eb">Blue</option><option value="#16a34a">Green</option>
+  <option value="#6366f1">Indigo</option><option value="#2563eb">Blue</option><option value="#16a34a">Green</option>
   <option value="#e11d48">Rose</option><option value="#9333ea">Purple</option></select></label>
  <label>Dimming <input type="range" id="dimr" min="0" max="80" oninput="S.dim=this.value/100;apply()"></label>
  <label>Line guide <input type="checkbox" id="gd" onchange="S.guide=this.checked;apply()"></label>
@@ -71,77 +121,124 @@ canvas{width:100%;display:block}
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const $=i=>document.getElementById(i);
-let bytes,doc,page=1,name='',tool='',vp1,hits=[],hi=-1,lock;
-const S=Object.assign({mode:'light',ac:'#2563eb',dim:0,goal:20,wake:false,guide:false},JSON.parse(localStorage.s||'{}'));
+const cv=$('cv'),stage=$('stage');
+const ICON='<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#a855f7"/></linearGradient></defs><rect width="512" height="512" rx="115" fill="url(#lg)"/><path d="M256 150c-40-28-92-34-136-22v230c44-12 96-6 136 22 40-28 92-34 136-22V128c-44-12-96-6-136 22z" fill="#fff"/><path d="M256 150v230" stroke="#c7d2fe" stroke-width="8"/><path d="M330 128h46v110l-23-18-23 18z" fill="#f59e0b"/></svg>';
+let bytes,doc,page=1,cur='',tool='',vp1,hits=[],hi=-1,lock,meta,view='home';
+const S=Object.assign({mode:'light',ac:'#6366f1',dim:0,goal:20,wake:false,guide:false,resume:true},JSON.parse(localStorage.s||'{}'));
 let T=JSON.parse(localStorage.t||'{}');
 const day=d=>d.toISOString().slice(0,10);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const title=n=>n.replace(/\.pdf$/i,'');
+const toast=t=>{const e=$('toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2500)};
 
-// ---------- storage (IndexedDB) ----------
-const idb=new Promise(r=>{const q=indexedDB.open('pdfs',1);q.onupgradeneeded=()=>q.result.createObjectStore('f');q.onsuccess=()=>r(q.result)});
-const dbp=async(m,...a)=>{const d=await idb;return new Promise(r=>{const o=d.transaction('f',/^get/.test(m)?'readonly':'readwrite').objectStore('f')[m](...a);o.onsuccess=()=>r(o.result)})};
-async function addFiles(fs){for(const f of fs)await dbp('put',new Uint8Array(await f.arrayBuffer()),f.name);await list();if(fs.length==1)openPdf(fs[0].name)}
-async function list(){const k=await dbp('getAllKeys');$('list').innerHTML='';k.forEach(n=>{const b=document.createElement('button');b.textContent='📄 '+n+'  (p.'+(localStorage['p_'+n]||1)+')';b.onclick=()=>openPdf(n);$('list').append(b)})}
+// ---------- storage ----------
+const idb=new Promise(r=>{const q=indexedDB.open('pdfs',2);
+ q.onupgradeneeded=()=>{const d=q.result;if(!d.objectStoreNames.contains('f'))d.createObjectStore('f');if(!d.objectStoreNames.contains('m'))d.createObjectStore('m')};
+ q.onsuccess=()=>r(q.result)});
+const db=async(s,m,...a)=>{const d=await idb;return new Promise(r=>{const o=d.transaction(s,m.startsWith('get')?'readonly':'readwrite').objectStore(s)[m](...a);o.onsuccess=()=>r(o.result)})};
+
+async function makeMeta(n,b){let cover='',pages=1;
+ try{const d=await pdfjsLib.getDocument({data:b.slice()}).promise;pages=d.numPages;
+  const p=await d.getPage(1),v=p.getViewport({scale:1}),vp=p.getViewport({scale:300/v.width}),c=document.createElement('canvas');
+  c.width=vp.width;c.height=vp.height;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);
+  await p.render({canvasContext:x,viewport:vp}).promise;cover=c.toDataURL('image/jpeg',.75);d.destroy()}catch(e){}
+ return{name:n,cover,pages,page:1,last:0,added:Date.now()}}
+async function migrate(){const fk=await db('f','getAllKeys'),mk=await db('m','getAllKeys');
+ for(const k of fk)if(!mk.includes(k)){const m=await makeMeta(k,await db('f','get',k));const o=+localStorage['p_'+k];if(o)m.page=o;await db('m','put',m,k)}}
+async function addFiles(fs){fs=Array.from(fs);if(!fs.length)return;toast('যোগ হচ্ছে…');let last='';
+ for(const f of fs){const b=new Uint8Array(await f.arrayBuffer());await db('f','put',b,f.name);await db('m','put',await makeMeta(f.name,b),f.name);last=f.name}
+ $('fi').value='';toast(fs.length+'টি বই যোগ হয়েছে');if(fs.length==1)openPdf(last);else goHome()}
+async function delBook(n){if(!confirm('"'+title(n)+'" মুছে ফেলবেন?'))return;await db('f','delete',n);await db('m','delete',n);goHome()}
+
+// ---------- home ----------
+const cover=m=>`<div class="cv">${m.cover?`<img src="${m.cover}">`:'📄'}</div>`;
+const pct=m=>Math.min(100,Math.round((m.page||1)/(m.pages||1)*100));
+async function goHome(){view='home';doc=null;$('home').style.display='block';$('reader').style.display='none';
+ const ms=(await db('m','getAll')).sort((a,b)=>(b.last||b.added)-(a.last||a.added));
+ const h=ms.find(m=>m.last>0);
+ $('heroBox').innerHTML=h?`<div class="hero" data-n="${esc(h.name)}">${cover(h)}<div class="hi"><small>CONTINUE READING</small><b>${esc(title(h.name))}</b><span>পৃষ্ঠা ${h.page} / ${h.pages}</span><div class="pb"><i style="width:${pct(h)}%"></i></div><button>▶ পড়া চালিয়ে যান</button></div></div>`:'';
+ $('allH').style.display=ms.length?'block':'none';
+ $('grid').innerHTML=ms.length?ms.map(m=>`<div class="book" data-n="${esc(m.name)}"><button class="del" data-del="${esc(m.name)}">✕</button>${cover(m)}<div class="t">${esc(title(m.name))}</div><div class="p">${m.last?pct(m.page?m:m)+'% পড়া':'নতুন'}</div></div>`).join('')
+  :`<div class="empty" style="grid-column:1/-1"><span id="logo2"></span><h2>আপনার শেলফ খালি</h2><p>PDF বই যোগ করে পড়া শুরু করুন</p><button onclick="$('fi').click()">＋ PDF যোগ করুন</button></div>`;
+ if(!ms.length)$('logo2').innerHTML=ICON.replace(/lg/g,'lg2');
+ stats()}
+$('home').onclick=e=>{const d=e.target.closest('[data-del]');if(d){e.stopPropagation();delBook(d.dataset.del);return}
+ const b=e.target.closest('[data-n]');if(b)openPdf(b.dataset.n)};
 
 // ---------- viewer ----------
-async function openPdf(n){name=n;bytes=await dbp('get',n);page=+localStorage['p_'+n]||1;await load();tog()}
+async function openPdf(n){cur=n;bytes=await db('f','get',n);meta=await db('m','get',n);
+ if(!bytes){goHome();return}
+ if(!meta){meta=await makeMeta(n,bytes);await db('m','put',meta,n)}
+ page=meta.page||1;view='reader';$('ttl').textContent=title(n);
+ $('home').style.display='none';$('reader').style.display='flex';tog();await load()}
 async function load(){doc=await pdfjsLib.getDocument({data:bytes.slice()}).promise;$('tot').textContent='/ '+doc.numPages;show(page)}
+function closeBook(){tog();goHome()}
 async function show(n){if(!doc)return;page=Math.max(1,Math.min(doc.numPages,n||1));
  const p=await doc.getPage(page);vp1=p.getViewport({scale:1});
- const sc=$('stage').clientWidth/vp1.width,dpr=devicePixelRatio||1,vp=p.getViewport({scale:sc*dpr});
+ const sc=stage.clientWidth/vp1.width,dpr=devicePixelRatio||1,vp=p.getViewport({scale:sc*dpr});
  cv.width=vp.width;cv.height=vp.height;
  await p.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
- $('pg').value=page;localStorage['p_'+name]=page;$('stage').scrollTop=0}
+ $('pg').value=page;stage.scrollTop=0;
+ if(meta){meta.page=page;meta.pages=doc.numPages;meta.last=Date.now();db('m','put',meta,cur)}}
 let sx=0;stage.ontouchstart=e=>sx=e.touches[0].clientX;
 stage.ontouchend=e=>{if(Math.abs(e.changedTouches[0].clientX-sx)>70)show(page+(e.changedTouches[0].clientX<sx?1:-1))};
 
 // ---------- editing ----------
-async function edit(fn){const d=await PDFLib.PDFDocument.load(bytes);const f=await d.embedFont(PDFLib.StandardFonts.Helvetica);await fn(d,f);bytes=await d.save();await dbp('put',bytes,name);await load()}
+async function edit(fn){const d=await PDFLib.PDFDocument.load(bytes);const f=await d.embedFont(PDFLib.StandardFonts.Helvetica);await fn(d,f);bytes=await d.save();await db('f','put',bytes,cur);await load()}
 function setTool(t){tool=tool==t?'':t;$('tText').classList.toggle('on',tool=='text')}
 cv.onclick=e=>{if(tool!='text'||!doc)return;const r=cv.getBoundingClientRect();
  const x=(e.clientX-r.left)/r.width*vp1.width,y=vp1.height-(e.clientY-r.top)/r.height*vp1.height;
  const t=prompt('Text লিখুন');if(!t)return;
  edit(async(d,f)=>d.getPage(page-1).drawText(t,{x,y,size:14,font:f,color:PDFLib.rgb(0,0,0)}))};
-function dl(){if(!bytes)return;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));a.download='edited_'+name;a.click()}
+function dl(){if(!bytes)return;const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));a.download='edited_'+cur;a.click()}
 
 // ---------- find & replace ----------
 async function scan(q){const out=[];for(let i=1;i<=doc.numPages;i++){const tc=await(await doc.getPage(i)).getTextContent();
  tc.items.forEach(it=>{if(it.str.toLowerCase().includes(q.toLowerCase()))out.push({page:i,it})})}return out}
-async function findNext(){if(!doc)return;const q=fq.value;if(!q)return;
- hits=await scan(q);if(!hits.length){fmsg.textContent='পাওয়া যায়নি';return}
- hi=(hi+1)%hits.length;fmsg.textContent=`${hi+1} / ${hits.length}`;show(hits[hi].page)}
-async function replaceAll(){const q=fq.value,r=fr.value;if(!doc||!q)return;
- const hs=await scan(q);if(!hs.length){fmsg.textContent='পাওয়া যায়নি';return}
+async function findNext(){if(!doc)return;const q=$('fq').value;if(!q)return;
+ hits=await scan(q);if(!hits.length){$('fmsg').textContent='পাওয়া যায়নি';return}
+ hi=(hi+1)%hits.length;$('fmsg').textContent=`${hi+1} / ${hits.length}`;show(hits[hi].page)}
+async function replaceAll(){const q=$('fq').value,r=$('fr').value;if(!doc||!q)return;
+ const hs=await scan(q);if(!hs.length){$('fmsg').textContent='পাওয়া যায়নি';return}
  await edit(async(d,f)=>{const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
   hs.forEach(({page:pn,it})=>{const pg=d.getPage(pn-1),[a,b,c,h,x,y]=it.transform,sz=Math.abs(h)||10;
    pg.drawRectangle({x,y:y-sz*.25,width:it.width,height:sz*1.2,color:PDFLib.rgb(1,1,1)});
    pg.drawText(it.str.replace(re,r),{x,y,size:sz,font:f})})});
- fmsg.textContent=hs.length+'টি replace হয়েছে'}
+ $('fmsg').textContent=hs.length+'টি replace হয়েছে'}
 
-// ---------- settings, dim, guide, wake lock ----------
+// ---------- settings ----------
 async function apply(){localStorage.s=JSON.stringify(S);
  document.body.className=S.mode;document.documentElement.style.setProperty('--ac',S.ac);
- dim.style.opacity=S.dim;guide.style.display=S.guide?'block':'none';
- mode.value=S.mode;ac.value=S.ac;dimr.value=S.dim*100;gd.checked=S.guide;wk.checked=S.wake;goal.value=S.goal;
+ $('dim').style.opacity=S.dim;$('guide').style.display=S.guide&&view=='reader'?'block':'none';
+ $('mode').value=S.mode;$('ac').value=S.ac;$('dimr').value=S.dim*100;$('gd').checked=S.guide;$('wk').checked=S.wake;$('goal').value=S.goal;$('rs').checked=S.resume;
  try{if(S.wake&&navigator.wakeLock&&!document.hidden)lock=await navigator.wakeLock.request('screen');else if(lock){lock.release();lock=null}}catch(e){}
  stats()}
 document.onvisibilitychange=()=>{if(!document.hidden)apply()};
+const guide=$('guide');
 guide.onpointerdown=e=>{guide.setPointerCapture(e.pointerId);guide.onpointermove=m=>guide.style.top=(m.clientY-22)+'px'};
 guide.onpointerup=()=>guide.onpointermove=null;
 
 // ---------- reading time ----------
-setInterval(()=>{if(doc&&!document.hidden){const k=day(new Date());T[k]=(T[k]||0)+1;localStorage.t=JSON.stringify(T);stats()}},1000);
+setInterval(()=>{if(doc&&view=='reader'&&!document.hidden){const k=day(new Date());T[k]=(T[k]||0)+1;localStorage.t=JSON.stringify(T);stats()}},1000);
 function stats(){const k=day(new Date()),m=Math.floor((T[k]||0)/60);
- $('today').textContent=`আজ ${m}/${S.goal} মিনিট`;
+ const t=`আজ ${m}/${S.goal} মিনিট`;$('today').textContent=t;$('today2').textContent='📖 '+t+(m>=S.goal?' ✅':'');
  if(!$('set').classList.contains('show'))return;
- let h='',tot=0;const v=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const s=T[day(d)]||0;tot+=s;v.push([d.toLocaleDateString('en',{weekday:'short'}),s])}
+ let tot=0;const v=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const s=T[day(d)]||0;tot+=s;v.push([d.toLocaleDateString('en',{weekday:'short'}),s])}
  const mx=Math.max(...v.map(x=>x[1]),S.goal*60,1);
- bars.innerHTML=v.map(x=>`<div style="height:${x[1]/mx*100}%">${Math.round(x[1]/60)}<br>${x[0]}</div>`).join('');
- gtxt.textContent=`এই সপ্তাহে মোট ${Math.round(tot/60)} মিনিট • Goal ${m>=S.goal?'✅ পূর্ণ':'চলছে'}`}
-function tog(id){document.querySelectorAll('.sheet').forEach(s=>s.id==id?s.classList.toggle('show'):s.classList.remove('show'));stats();if(id=='lib')list()}
+ $('bars').innerHTML=v.map(x=>`<div style="height:${x[1]/mx*100}%">${Math.round(x[1]/60)}<br>${x[0]}</div>`).join('');
+ $('gtxt').textContent=`এই সপ্তাহে মোট ${Math.round(tot/60)} মিনিট • Goal ${m>=S.goal?'✅ পূর্ণ':'চলছে'}`}
+function tog(id){document.querySelectorAll('.sheet').forEach(s=>s.id==id?s.classList.toggle('show'):s.classList.remove('show'));stats()}
+
+// ---------- icons ----------
+$('logo1').innerHTML=ICON;
+(function(){const u='data:image/svg+xml,'+encodeURIComponent(ICON);
+ const f=document.createElement('link');f.rel='icon';f.href=u;document.head.append(f);
+ const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=180;c.getContext('2d').drawImage(im,0,0,180,180);
+  const l=document.createElement('link');l.rel='apple-touch-icon';l.href=c.toDataURL();document.head.append(l)};im.src=u})();
 
 // ---------- start ----------
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
-apply();list();
-dbp('getAllKeys').then(async k=>{const l=localStorage.last;if(l&&k.includes(l))openPdf(l)});
-setInterval(()=>{if(name)localStorage.last=name},2000);
+(async()=>{await migrate();apply();
+ const ms=await db('m','getAll');const l=ms.filter(m=>m.last>0).sort((a,b)=>b.last-a.last)[0];
+ if(S.resume&&l)openPdf(l.name);else goHome()})();
 </script></body></html>
