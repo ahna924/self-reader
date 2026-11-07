@@ -32,13 +32,19 @@ body.lt #sbar{opacity:1}
 .g3{color:var(--fg);border:0;background:var(--ui);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);
  box-shadow:0 1px 4px rgba(0,0,0,.06),0 0 0 .5px rgba(0,0,0,.04);transition:transform .18s var(--spr),background .2s}
 .g3:active{transform:scale(.95)}
-/* clear liquid glass (clearly visible even on same-color background) */
+/* liquid glass (scrubber) */
 .lg{color:var(--fg);border:0;
  background:linear-gradient(135deg,rgba(255,255,255,.4),rgba(255,255,255,.06) 50%,rgba(255,255,255,.24));
  -webkit-backdrop-filter:blur(14px) saturate(1.8);backdrop-filter:blur(14px) saturate(1.8);
  box-shadow:inset 0 0 0 1.2px rgba(255,255,255,.65),inset 0 2px 3px rgba(255,255,255,.65),inset 0 -2px 4px rgba(0,0,0,.08),0 0 0 .5px rgba(0,0,0,.2),0 8px 22px rgba(0,0,0,.22);
  transition:transform .18s var(--spr)}
 .lg:active{transform:scale(.94)}
+/* Apple Books style white glass (close button, page number, chapter) */
+.gl{color:var(--fg);border:0;background:rgba(255,255,255,.5);background:color-mix(in srgb,#fff 48%,transparent);
+ -webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6);
+ box-shadow:0 2px 12px rgba(0,0,0,.13),0 0 0 .5px rgba(0,0,0,.05);transition:transform .18s var(--spr)}
+.gl:active{transform:scale(.94)}
+body.t-quiet .gl,body.t-night .gl{background:rgba(255,255,255,.16);box-shadow:0 2px 12px rgba(0,0,0,.35),inset 0 0 0 .5px rgba(255,255,255,.2)}
 input.sw{-webkit-appearance:none;appearance:none;width:51px;height:31px;border-radius:16px;background:rgba(120,120,128,.34);position:relative;transition:background .25s;padding:0;border:0;flex:none;cursor:pointer}
 input.sw::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 3px 8px rgba(0,0,0,.25),0 1px 1px rgba(0,0,0,.16);transition:transform .28s var(--spr)}
 input.sw:checked{background:#34c759}input.sw:checked::after{transform:translateX(20px)}
@@ -113,15 +119,15 @@ body.drawing .ui{opacity:0;pointer-events:none}
 body.showui #mbtn{transform:none}
 body.menuopen #mbtn{opacity:0;pointer-events:none}
 .pill{position:fixed;left:50%;transform:translateX(-50%);padding:7px 18px;border-radius:20px;font-size:15px;z-index:20;white-space:nowrap;pointer-events:none}
-.pill.lg{color:var(--fg)}
 #chpill{top:calc(var(--sat) + 14px)}
 body.showui #chpill{transform:translateX(-50%)}
-#pgpill{bottom:calc(var(--sab) + 18px);opacity:.8;transition:opacity .25s}
-body.showui #pgpill,body.menuopen #pgpill,body.scrubbing #pgpill{opacity:1}
+#pgpill{bottom:calc(var(--sab) + 18px);opacity:0;transition:opacity .3s}
+body.showui #pgpill,body.menuopen #pgpill{opacity:1}
+body.scrubbing #pgpill{opacity:0}
 #ttl{position:fixed;top:calc(var(--sat) + 8px);left:50%;transform:translateX(-50%);max-width:60%;font-size:13px;color:var(--mut);opacity:.75;z-index:4;pointer-events:none;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;transition:opacity .25s}
 body.showui #ttl,body.drawing #ttl{opacity:0}
 /* menu */
-#mscrim{position:fixed;inset:0;background:radial-gradient(circle at 85% 92%,rgba(0,0,0,.4),rgba(0,0,0,0) 70%);opacity:0;pointer-events:none;transition:opacity .3s;z-index:19}
+#mscrim{position:fixed;left:-100px;right:-100px;top:-200px;bottom:-400px;background:radial-gradient(circle at 88% 78%,rgba(0,0,0,.4),rgba(0,0,0,0) 70%);opacity:0;pointer-events:none;transition:opacity .3s;z-index:19}
 body.menuopen #mscrim{opacity:1}
 #mw{position:fixed;right:14px;bottom:calc(var(--sab) + 16px);z-index:21;opacity:0;visibility:hidden;transform:scale(.82) translateY(14px);transform-origin:100% 100%;transition:opacity .22s,transform .34s var(--spr),visibility .3s}
 body.menuopen #mw{opacity:1;visibility:visible;transform:none}
@@ -174,7 +180,7 @@ body.drawing #ptb{display:block;animation:mpop .4s var(--spr)}
 #pcols i.wheel{background:conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
 #pcols i input{position:absolute;inset:0;opacity:0;width:100%;height:100%;padding:0;border:0}
 /* sheets */
-#scrim{position:fixed;inset:0;background:rgba(0,0,0,.28);z-index:29;opacity:0;pointer-events:none;transition:opacity .3s}
+#scrim{position:fixed;left:-100px;right:-100px;top:-200px;bottom:-400px;background:rgba(0,0,0,.28);z-index:29;opacity:0;pointer-events:none;transition:opacity .3s}
 body.sheeted #scrim{opacity:1;pointer-events:auto}
 .sheet{position:fixed;left:12px;right:12px;bottom:calc(var(--sab) + 12px);margin:0 auto;max-width:720px;max-height:82%;overflow:auto;background:var(--sh);background:color-mix(in srgb,var(--sh) 70%,transparent);-webkit-backdrop-filter:blur(34px) saturate(1.8);backdrop-filter:blur(34px) saturate(1.8);color:var(--fg);padding:14px 16px 16px;z-index:30;border-radius:32px;box-shadow:0 12px 40px rgba(0,0,0,.28);transform:translateY(115%) scale(.96);opacity:0;visibility:hidden;transition:transform .42s var(--spr),opacity .25s,visibility .4s}
 .sheet.show{transform:none;opacity:1;visibility:visible}
@@ -238,9 +244,9 @@ body.sheeted #scrim{opacity:1;pointer-events:auto}
  <div id="stage"><div id="pbox"><canvas id="cc"></canvas><canvas id="cs"></canvas></div><div id="sc"></div></div>
  <div id="spin"><i></i></div>
  <div id="ttl"></div>
- <button id="xbtn" class="ui rb lg" data-ic="close" onclick="closeBook()"></button>
- <div id="chpill" class="ui pill lg"></div>
- <div id="pgpill" class="pill lg">1 of 1</div>
+ <button id="xbtn" class="ui rb gl" data-ic="close" onclick="closeBook()"></button>
+ <div id="chpill" class="ui pill gl"></div>
+ <div id="pgpill" class="pill gl">1 of 1</div>
  <button id="mbtn" class="ui rb g3" data-ic="menu" onclick="menu(1)"></button>
  <div id="mscrim"></div>
  <div id="scrub" class="lg"><div id="sfill"></div><div id="sthumb"></div></div>
@@ -313,7 +319,7 @@ body.sheeted #scrim{opacity:1;pointer-events:auto}
  </div></div>
 
 <script>
-const VER='v8';
+const VER='v9';
 const $=i=>document.getElementById(i);
 const stage=$('stage'),pbox=$('pbox'),sc=$('sc'),cc=$('cc'),cs=$('cs'),cbt=$('cbt');
 const CDN='https://cdnjs.cloudflare.com/ajax/libs/';
@@ -535,23 +541,25 @@ function compOf(o){
  x.globalCompositeOperation=dk?'screen':'multiply';x.drawImage(t,0,0);t.width=0;return c}
 function flipStart(dir){if(fl||!curO||!doc||Z.s>1.01)return false;const n=page+dir;if(n<1||n>doc.numPages)return false;
  const o=getEl(n);if(!o.done)return false;
- pbox.insertBefore(o.el,cc);fl={dir,o,cur:curO,p:0,fy:0};
+ pbox.insertBefore(o.el,cc);fl={dir,o,cur:curO,p:0,fy:0,anim:false,to:0,at:false};
  if(S.flip=='curl'){D=Math.min(devicePixelRatio||1,2);
   cc.width=cs.width=Math.round(stage.clientWidth*D);cc.height=cs.height=Math.round(stage.clientHeight*D);
   const top=dir>0?curO:o,bot=dir>0?o:curO;
   fl.ct=compOf(top);fl.cb=compOf(bot);fl.rc=fitRect(top);
+  fl.at=!!(g&&typeof g.y0=='number'&&g.y0<fl.rc.y+fl.rc.h/2);
   curO.el.style.visibility=o.el.style.visibility='hidden';cc.style.display=cs.style.display='block'}
  flipSet(0);return true}
-function curlDraw(topC,botC,t,rc,fy){
+function curlDraw(topC,botC,t,rc,fy,at){
  const W=cc.width,H=cc.height,x=cc.getContext('2d');
  x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,W,H);
- const xl=rc.x*D,xr=(rc.x+rc.w)*D,yt=rc.y*D,yb=(rc.y+rc.h)*D,w=xr-xl,h=yb-yt;
+ const xl=rc.x*D,xr=(rc.x+rc.w)*D,yt=rc.y*D,yb=(rc.y+rc.h)*D,w=xr-xl,h=yb-yt,ay=at?yt:yb;
  x.drawImage(botC,0,0);
  if(t<=.003){x.drawImage(topC,0,0);return}
  if(t>=.998)return;
- const lift=h*.2*Math.sin(Math.PI*t)+Math.max(-h*.28,Math.min(h*.28,(fy||0)*D*.6))*Math.min(1,t*5)*(1-t*.6);
- const Px=xr-2*w*t,Py=yb-lift,dx=xr-Px,dy=yb-Py,L=Math.hypot(dx,dy)||1,nx=dx/L,ny=dy/L,
-  Mx=(xr+Px)/2,My=(yb+Py)/2,tx=-ny,ty=nx,B=4*(W+H);
+ const base=h*.1*Math.sin(Math.PI*t)*(at?1:-1),
+  fe=Math.max(-h*.7,Math.min(h*.7,(fy||0)*D))*(1-t*.75),
+  Px=xr-2*w*t,Py=ay+base+fe,dx=xr-Px,dy=ay-Py,L=Math.hypot(dx,dy)||1,
+  nx=dx/L,ny=dy/L,Mx=(xr+Px)/2,My=(ay+Py)/2,tx=-ny,ty=nx,B=4*(W+H);
  const half=s=>{x.beginPath();x.moveTo(Mx+tx*B,My+ty*B);x.lineTo(Mx-tx*B,My-ty*B);
   x.lineTo(Mx-tx*B+s*nx*B,My-ty*B+s*ny*B);x.lineTo(Mx+tx*B+s*nx*B,My+ty*B+s*ny*B);x.closePath()};
  x.save();half(-1);x.clip();x.drawImage(topC,0,0);x.restore();
@@ -571,14 +579,21 @@ function curlDraw(topC,botC,t,rc,fy){
  g2.addColorStop(0,'rgba(0,0,0,.30)');g2.addColorStop(.25,'rgba(0,0,0,.08)');g2.addColorStop(.5,'rgba(255,255,255,.09)');g2.addColorStop(1,'rgba(0,0,0,0)');
  x.fillStyle=g2;x.fillRect(0,0,W,H);
  x.restore()}
-function flipSet(p){if(!fl)return;fl.p=p;const{dir,o,cur}=fl,m=S.flip;
+function flipSet(p){if(!fl)return;const{dir,o,cur}=fl,m=S.flip;
+ if(m=='curl'&&g&&g.mode=='h'&&!fl.anim){p=Math.max(0,Math.min(1,-dir*(g.lx-g.x0)/(2*fl.rc.w)))}
+ fl.p=p;
  if(m=='slide'){const w=stage.clientWidth;cur.el.style.transform=`translate3d(${-dir*p*w}px,0,0)`;o.el.style.transform=`translate3d(${dir*(1-p)*w}px,0,0)`}
  else if(m=='fade'){cur.el.style.zIndex=1;o.el.style.zIndex=2;o.el.style.opacity=p}
- else curlDraw(fl.ct,fl.cb,dir>0?p:1-p,fl.rc,fl.fy||0)}
+ else curlDraw(fl.ct,fl.cb,dir>0?p:1-p,fl.rc,fl.fy||0,fl.at)}
 function rs(o){const s=o.el.style;s.transform=s.opacity=s.zIndex=s.visibility=''}
-function anim(to,dur,done,io2){if(!fl)return;const from=fl.p,t0=performance.now();
- const f=t=>{if(!fl)return;const k=Math.max(0,Math.min(1,(t-t0)/dur)),e=io2?(k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2):1-Math.pow(1-k,3);flipSet(from+(to-from)*e);k<1?requestAnimationFrame(f):done()};requestAnimationFrame(f)}
-function flipEnd(v){if(!fl)return;const ok=fl.p>.3||(-fl.dir*v>.5&&fl.p>.04),to=ok?1:0;fl.anim=true;anim(to,Math.abs(to-fl.p)*(S.flip=='curl'?560:380)+140,()=>flipFinish(ok))}
+function anim(to,dur,done,io2){if(!fl)return;const my=fl,from=my.p,t0=performance.now();my.anim=true;my.to=to;
+ const f=t=>{if(fl!==my)return;
+  const k=Math.max(0,Math.min(1,(t-t0)/dur)),e=io2?(k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2):1-Math.pow(1-k,3);
+  my.fy=(my.fy||0)*.94;flipSet(from+(to-from)*e);k<1?requestAnimationFrame(f):done()};
+ requestAnimationFrame(f)}
+function flipEnd(v){if(!fl)return;
+ const th=S.flip=='curl'?.09:.3,ok=fl.p>th||(-fl.dir*v>.35&&fl.p>.02),to=ok?1:0;
+ anim(to,Math.abs(to-fl.p)*(S.flip=='curl'?560:380)+140,()=>flipFinish(ok))}
 function flipFinish(ok){if(!fl)return;const{o,cur}=fl;rs(cur);rs(o);
  cc.style.display=cs.style.display='none';fl.ct=fl.cb=null;
  if(ok){cur.el.remove();curO=o;page=o.n;resetZ();pageChanged();prefetch()}else o.el.remove();
@@ -643,6 +658,8 @@ function startPinch(){if(S.flip=='scroll')return;
  pz={d0:Math.hypot(a.x-b.x,a.y-b.y)||1,s0:Z.s,wx:(mx-Z.x)/Z.s,wy:(my-Z.y)/Z.s}}
 function doPinch(){const[a,b]=[...ptrs.values()],r=stage.getBoundingClientRect(),mx=(a.x+b.x)/2-r.left,my=(a.y+b.y)/2-r.top,d=Math.hypot(a.x-b.x,a.y-b.y);
  Z.s=Math.max(.8,Math.min(6,pz.s0*d/pz.d0));Z.x=mx-pz.wx*Z.s;Z.y=my-pz.wy*Z.s;clampZ();applyZ(false)}
+/* a new touch during a running flip animation: finish the old flip at once, then handle the new gesture */
+stage.addEventListener('pointerdown',e=>{if(fl&&fl.anim)flipFinish(fl.to===1)},true);
 stage.addEventListener('pointerdown',e=>{if(view!='reader'||stroke)return;
  if(tool&&S.pk!='tx'&&(e.pointerType!='touch'||S.fd)&&onInk(e.target)&&!ptrs.size){startStroke(e);e.preventDefault();return}
  ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
