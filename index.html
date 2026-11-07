@@ -32,13 +32,6 @@ body.lt #sbar{opacity:1}
 .g3{color:var(--fg);border:0;background:var(--ui);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);
  box-shadow:0 1px 4px rgba(0,0,0,.06),0 0 0 .5px rgba(0,0,0,.04);transition:transform .18s var(--spr),background .2s}
 .g3:active{transform:scale(.95)}
-/* liquid glass (scrubber) */
-.lg{color:var(--fg);border:0;
- background:linear-gradient(135deg,rgba(255,255,255,.4),rgba(255,255,255,.06) 50%,rgba(255,255,255,.24));
- -webkit-backdrop-filter:blur(14px) saturate(1.8);backdrop-filter:blur(14px) saturate(1.8);
- box-shadow:inset 0 0 0 1.2px rgba(255,255,255,.65),inset 0 2px 3px rgba(255,255,255,.65),inset 0 -2px 4px rgba(0,0,0,.08),0 0 0 .5px rgba(0,0,0,.2),0 8px 22px rgba(0,0,0,.22);
- transition:transform .18s var(--spr)}
-.lg:active{transform:scale(.94)}
 /* Apple Books style white glass (close button, page number, chapter) */
 .gl{color:var(--fg);border:0;background:rgba(255,255,255,.5);background:color-mix(in srgb,#fff 48%,transparent);
  -webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6);
@@ -131,7 +124,8 @@ body.showui #ttl,body.drawing #ttl{opacity:0}
 body.menuopen #mscrim{opacity:1}
 #mw{position:fixed;right:14px;bottom:calc(var(--sab) + 16px);z-index:21;opacity:0;visibility:hidden;transform:scale(.82) translateY(14px);transform-origin:100% 100%;transition:opacity .22s,transform .34s var(--spr),visibility .3s}
 body.menuopen #mw{opacity:1;visibility:visible;transform:none}
-#mp{width:min(280px,62vw);display:flex;flex-direction:column;gap:8px}
+#mp{width:min(280px,62vw);display:flex;flex-direction:column;gap:8px;transition:width .3s var(--spr)}
+body.scrubbing #mp{width:min(92vw,460px)}
 body.menuopen #mp>*{animation:mpop .42s var(--spr) backwards;animation-delay:calc(var(--k,0)*40ms)}
 body.scrubbing #mp>*:not(.cbt){opacity:0;pointer-events:none;transition:opacity .15s;animation:none}
 .mi{display:flex;justify-content:space-between;align-items:center;width:100%;height:48px;padding:0 20px;border-radius:24px;font-size:16px}
@@ -149,15 +143,6 @@ body.scrubbing #mp>*:not(.cbt){opacity:0;pointer-events:none;transition:opacity 
 .cbt .cl b{display:flex}
 .cbt .cd{position:absolute;top:0;bottom:0;right:0;width:var(--rw,50%);overflow:hidden;background:#1f160a;color:#fff}
 .cbt .cd .cl{left:auto;right:0;width:var(--bw,260px)}
-/* page scrubber (shown while dragging the Contents pill) */
-#scrub{position:fixed;left:50%;bottom:calc(var(--sab) + 86px);width:min(88vw,560px);height:46px;border-radius:23px;z-index:26;overflow:hidden;pointer-events:none;opacity:0;transform:translateX(-50%) scale(.92);transition:opacity .2s,transform .3s var(--spr)}
-body.scrubbing #scrub{opacity:1;transform:translateX(-50%)}
-#sfill{position:absolute;left:0;top:0;bottom:0;width:0;background:rgba(31,22,10,.82)}
-body.t-quiet #sfill,body.t-night #sfill{background:rgba(255,255,255,.42)}
-#sthumb{position:absolute;top:6px;bottom:6px;width:8px;border-radius:4px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.45)}
-#sbub{position:fixed;left:50%;bottom:calc(var(--sab) + 146px);transform:translateX(-50%) scale(.92);padding:10px 24px;border-radius:20px;text-align:center;font-size:18px;white-space:nowrap;z-index:26;pointer-events:none;opacity:0;transition:opacity .2s,transform .3s var(--spr)}
-body.scrubbing #sbub{opacity:1;transform:translateX(-50%)}
-#sbub .bc{font-size:14px;color:var(--mut);max-width:240px;overflow:hidden;text-overflow:ellipsis;margin:0 auto}
 /* markup */
 #ptop{position:fixed;top:calc(var(--sat) + 10px);right:14px;display:none;gap:4px;padding:5px;border-radius:30px;z-index:22}
 body.drawing #ptop{display:flex;animation:mpop .35s var(--spr)}
@@ -249,8 +234,6 @@ body.sheeted #scrim{opacity:1;pointer-events:auto}
  <div id="pgpill" class="pill gl">1 of 1</div>
  <button id="mbtn" class="ui rb g3" data-ic="menu" onclick="menu(1)"></button>
  <div id="mscrim"></div>
- <div id="scrub" class="lg"><div id="sfill"></div><div id="sthumb"></div></div>
- <div id="sbub" class="lg"></div>
  <div id="mw">
   <div id="mp">
    <button id="cbt" class="mi g3 cbt" style="--k:0"><span class="cl"><span id="ctx">Contents</span><b data-ic="list"></b></span><span class="cd"><span class="cl"><span id="ctx2">Contents</span><b data-ic="list"></b></span></span></button>
@@ -319,7 +302,7 @@ body.sheeted #scrim{opacity:1;pointer-events:auto}
  </div></div>
 
 <script>
-const VER='v9';
+const VER='v10';
 const $=i=>document.getElementById(i);
 const stage=$('stage'),pbox=$('pbox'),sc=$('sc'),cc=$('cc'),cs=$('cs'),cbt=$('cbt');
 const CDN='https://cdnjs.cloudflare.com/ajax/libs/';
@@ -529,7 +512,7 @@ async function show(n,inst){if(!doc)return;n=Math.max(1,Math.min(doc.numPages,Ma
  await o.ready;if(fl){want=n;return}
  const dir=n>page?1:-1;if(!flipStart(dir))return;fl.anim=true;anim(1,S.flip=='curl'?760:S.flip=='slide'?420:240,()=>flipFinish(true),true)}
 
-// ---------- page turn engine (corner curl) ----------
+// ---------- page turn engine (corner curl + full-side roll) ----------
 function compOf(o){
  const r=fitRect(o),W=cc.width,H=cc.height,dk=isDark(eff()),c=document.createElement('canvas');c.width=W;c.height=H;
  const x=c.getContext('2d'),t=document.createElement('canvas');t.width=W;t.height=H;const y=t.getContext('2d');
@@ -541,17 +524,51 @@ function compOf(o){
  x.globalCompositeOperation=dk?'screen':'multiply';x.drawImage(t,0,0);t.width=0;return c}
 function flipStart(dir){if(fl||!curO||!doc||Z.s>1.01)return false;const n=page+dir;if(n<1||n>doc.numPages)return false;
  const o=getEl(n);if(!o.done)return false;
- pbox.insertBefore(o.el,cc);fl={dir,o,cur:curO,p:0,fy:0,anim:false,to:0,at:false};
+ pbox.insertBefore(o.el,cc);fl={dir,o,cur:curO,p:0,fy:0,anim:false,to:0,mode:'mid'};
  if(S.flip=='curl'){D=Math.min(devicePixelRatio||1,2);
   cc.width=cs.width=Math.round(stage.clientWidth*D);cc.height=cs.height=Math.round(stage.clientHeight*D);
   const top=dir>0?curO:o,bot=dir>0?o:curO;
   fl.ct=compOf(top);fl.cb=compOf(bot);fl.rc=fitRect(top);
-  fl.at=!!(g&&typeof g.y0=='number'&&g.y0<fl.rc.y+fl.rc.h/2);
+  if(g&&typeof g.y0=='number'){const r=(g.y0-fl.rc.y)/fl.rc.h;fl.mode=r<.3?'top':r>.7?'bot':'mid'}
   curO.el.style.visibility=o.el.style.visibility='hidden';cc.style.display=cs.style.display='block'}
  flipSet(0);return true}
-function curlDraw(topC,botC,t,rc,fy,at){
+/* whole right side lifts and rolls like a real page (touch started in the middle of the page) */
+function rollDraw(topC,botC,t,rc){
  const W=cc.width,H=cc.height,x=cc.getContext('2d');
- x.setTransform(1,0,0,1,0,0);x.clearRect(0,0,W,H);
+ x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.clearRect(0,0,W,H);
+ const xl=rc.x*D,xr=(rc.x+rc.w)*D,w=xr-xl,R=Math.max(w*.1,60*D);
+ x.drawImage(botC,0,0);
+ if(t<=.003){x.drawImage(topC,0,0);return}
+ if(t>=.998)return;
+ const f=xr-t*(w+R*1.2),bg=getComputedStyle(document.body).getPropertyValue('--bg').trim()||'#fff',
+  st=Math.max(2,Math.round(D*1.3)),half=Math.PI*R/2,full=Math.PI*R,smax=W-f,
+  s0=Math.max(0,Math.ceil(-f/st)*st),re=f+R*Math.sin(Math.min(Math.max(smax,0),half)/R);
+ if(f>0)x.drawImage(topC,0,0,f,H,0,0,f,H);
+ const gw=Math.max(w*.09,R*1.8),g1=x.createLinearGradient(re,0,re+gw,0);
+ g1.addColorStop(0,'rgba(0,0,0,.34)');g1.addColorStop(.4,'rgba(0,0,0,.12)');g1.addColorStop(1,'rgba(0,0,0,0)');
+ x.fillStyle=g1;x.fillRect(re,0,gw,H);
+ for(let s=s0;s<=Math.min(smax,half);s+=st){
+  const th=s/R,dx=f+R*Math.sin(th),dn=f+R*Math.sin(Math.min(s+st,half)/R),dw=Math.max(.8,dn-dx+.7),sx=f+s,sw=Math.min(st,W-sx);
+  if(sw<=0)break;
+  x.drawImage(topC,sx,0,sw,H,dx,0,dw,H);
+  const q=th/(Math.PI/2);
+  x.fillStyle='rgba(0,0,0,'+(.03+.4*Math.pow(q,2.4)).toFixed(3)+')';x.fillRect(dx,0,dw,H);
+  const hl=Math.exp(-Math.pow((q-.55)/.16,2))*.22;if(hl>.01){x.fillStyle='rgba(255,255,255,'+hl.toFixed(3)+')';x.fillRect(dx,0,dw,H)}}
+ for(let s=Math.max(s0,Math.ceil(half/st)*st);s<=Math.min(smax,full);s+=st){
+  const th=s/R,dx=f+R*Math.sin(th),dn=f+R*Math.sin(Math.min(s+st,full)/R),dw=Math.max(.8,dx-dn+.7),sx=f+s,sw=Math.min(st,W-sx);
+  if(sw<=0)break;
+  x.drawImage(topC,sx,0,sw,H,dn,0,dw,H);
+  x.globalAlpha=.6;x.fillStyle=bg;x.fillRect(dn,0,dw,H);x.globalAlpha=1;
+  const q=Math.min(1,(th-Math.PI/2)/(Math.PI/2));
+  x.fillStyle='rgba(0,0,0,'+(.02+.2*(1-q)).toFixed(3)+')';x.fillRect(dn,0,dw,H)}
+ if(smax>full){const a=Math.max(0,f+full),len=W-a;
+  if(len>0){x.save();x.setTransform(-1,0,0,1,2*f+full,0);x.drawImage(topC,a,0,len,H,a,0,len,H);x.restore();
+   const l=2*f+full-W;x.globalAlpha=.6;x.fillStyle=bg;x.fillRect(l,0,len,H);x.globalAlpha=1;
+   x.fillStyle='rgba(0,0,0,.06)';x.fillRect(l,0,len,H)}}}
+function curlDraw(topC,botC,t,rc,fy,mode){
+ if(mode=='mid'){rollDraw(topC,botC,t,rc);return}
+ const at=mode=='top',W=cc.width,H=cc.height,x=cc.getContext('2d');
+ x.setTransform(1,0,0,1,0,0);x.globalAlpha=1;x.clearRect(0,0,W,H);
  const xl=rc.x*D,xr=(rc.x+rc.w)*D,yt=rc.y*D,yb=(rc.y+rc.h)*D,w=xr-xl,h=yb-yt,ay=at?yt:yb;
  x.drawImage(botC,0,0);
  if(t<=.003){x.drawImage(topC,0,0);return}
@@ -580,19 +597,20 @@ function curlDraw(topC,botC,t,rc,fy,at){
  x.fillStyle=g2;x.fillRect(0,0,W,H);
  x.restore()}
 function flipSet(p){if(!fl)return;const{dir,o,cur}=fl,m=S.flip;
- if(m=='curl'&&g&&g.mode=='h'&&!fl.anim){p=Math.max(0,Math.min(1,-dir*(g.lx-g.x0)/(2*fl.rc.w)))}
+ if(m=='curl'&&g&&g.mode=='h'&&!fl.anim){const den=(fl.mode=='mid'?1.6:2)*fl.rc.w;p=Math.max(0,Math.min(1,-dir*(g.lx-g.x0)/den))}
  fl.p=p;
  if(m=='slide'){const w=stage.clientWidth;cur.el.style.transform=`translate3d(${-dir*p*w}px,0,0)`;o.el.style.transform=`translate3d(${dir*(1-p)*w}px,0,0)`}
  else if(m=='fade'){cur.el.style.zIndex=1;o.el.style.zIndex=2;o.el.style.opacity=p}
- else curlDraw(fl.ct,fl.cb,dir>0?p:1-p,fl.rc,fl.fy||0,fl.at)}
+ else curlDraw(fl.ct,fl.cb,dir>0?p:1-p,fl.rc,fl.fy||0,fl.mode)}
 function rs(o){const s=o.el.style;s.transform=s.opacity=s.zIndex=s.visibility=''}
 function anim(to,dur,done,io2){if(!fl)return;const my=fl,from=my.p,t0=performance.now();my.anim=true;my.to=to;
  const f=t=>{if(fl!==my)return;
   const k=Math.max(0,Math.min(1,(t-t0)/dur)),e=io2?(k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2):1-Math.pow(1-k,3);
   my.fy=(my.fy||0)*.94;flipSet(from+(to-from)*e);k<1?requestAnimationFrame(f):done()};
  requestAnimationFrame(f)}
+/* flip only after a real drag (about 30% of the page) or a light flick; a small corner lift falls back */
 function flipEnd(v){if(!fl)return;
- const th=S.flip=='curl'?.09:.3,ok=fl.p>th||(-fl.dir*v>.35&&fl.p>.02),to=ok?1:0;
+ const ok=fl.p>.3||(-fl.dir*v>.45&&fl.p>.05),to=ok?1:0;
  anim(to,Math.abs(to-fl.p)*(S.flip=='curl'?560:380)+140,()=>flipFinish(ok))}
 function flipFinish(ok){if(!fl)return;const{o,cur}=fl;rs(cur);rs(o);
  cc.style.display=cs.style.display='none';fl.ct=fl.cb=null;
@@ -618,13 +636,14 @@ let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(doc
 
 function pageChanged(){if(!doc)return;const N=doc.numPages;
  $('pgpill').textContent=page+' of '+N;
- const pc=Math.round(page/N*100),t='Contents • '+pc+'%';$('ctx').textContent=t;$('ctx2').textContent=t;
- if(!drag){cbt.style.setProperty('--rw',(100-pc)+'%');cbt.style.setProperty('--bw',cbt.offsetWidth+'px')}
+ if(!drag){const pc=Math.round(page/N*100),t='Contents • '+pc+'%';$('ctx').textContent=t;$('ctx2').textContent=t;
+  cbt.style.setProperty('--rw',(100-pc)+'%');cbt.style.setProperty('--bw',cbt.offsetWidth+'px')}
  let ct='';if(chapTop.length){if(page==N||chapTop.some(c=>c.p==page+1))ct='Last page in chapter';else{const c=chapOf(page);ct=c?c.t:''}}
  $('chpill').textContent=ct;$('chpill').style.display=ct?'':'none';
  $('bm').classList.toggle('on',!!meta&&(meta.bm||[]).includes(page));
  if(meta){meta.page=page;meta.pages=N;meta.last=Date.now();saveMeta()}
  sched()}
+if(window.ResizeObserver)new ResizeObserver(()=>cbt.style.setProperty('--bw',cbt.offsetWidth+'px')).observe(cbt);
 
 // ---------- zoom ----------
 function applyZ(sm){pbox.style.transition=sm?'transform .3s cubic-bezier(.2,.8,.2,1)':'none';
@@ -687,7 +706,7 @@ function up(e,cancel){
    if(ptrs.size==1){const[id,p]=[...ptrs][0];g={id,x0:p.x,y0:p.y,t0:performance.now(),mode:Z.s>1.01?'p':'x',v:0,lx:p.x,ly:p.y,lt:performance.now(),zx:Z.x,zy:Z.y,vx:0,vy:0}}}
   return}
  if(!g||e.pointerId!=g.id)return;const gg=g;g=null;
- if(gg.mode=='h'){flipEnd(cancel?0:gg.v);return}
+ if(gg.mode=='h'){flipEnd(cancel||performance.now()-gg.lt>90?0:gg.v);return}
  if(gg.mode=='p'){inertia(gg.vx,gg.vy);return}
  if(!cancel&&!gg.mode&&Math.hypot(e.clientX-gg.x0,e.clientY-gg.y0)<10&&performance.now()-gg.t0<600)tap(e,gg.tg)}
 stage.addEventListener('pointerup',e=>up(e,false));stage.addEventListener('pointercancel',e=>up(e,true));
@@ -707,18 +726,16 @@ function menu(o){document.body.classList.toggle('menuopen',!!o);if(o)document.bo
 document.addEventListener('keydown',e=>{if(view!='reader'||/INPUT|SELECT/.test(e.target.tagName))return;
  if(e.key=='ArrowRight')show(page+1);if(e.key=='ArrowLeft')show(page-1)});
 
-// ---------- page scrubber (drag the Contents pill) ----------
-const scrubEl=$('scrub');let sd=null,sblock=false;
+// ---------- page scrubber: drag the Contents pill left/right, "Page N of M" shows inside it ----------
+let sd=null,sblock=false;
 cbt.onclick=()=>{if(!sblock)tog('toc')};
 cbt.addEventListener('pointerdown',e=>{if(!doc)return;
  sd={x0:e.clientX,f0:doc.numPages>1?(page-1)/(doc.numPages-1):0,on:false,id:e.pointerId,p:page}});
 cbt.addEventListener('pointermove',e=>{if(!sd||!doc)return;const dx=e.clientX-sd.x0;
  if(!sd.on){if(Math.abs(dx)<8)return;sd.on=true;drag=true;try{cbt.setPointerCapture(sd.id)}catch(er){}document.body.classList.add('scrubbing')}
- const N=doc.numPages,W=Math.max(120,scrubEl.offsetWidth-24),f=Math.max(0,Math.min(1,sd.f0+dx/W)),p=Math.round(1+f*(N-1));sd.p=p;
- $('sfill').style.width=(f*100)+'%';$('sthumb').style.left='calc('+(f*100)+'% - '+(f*8)+'px)';
- const c=chapOf(p);$('sbub').innerHTML=(c?'<div class="bc">'+esc(c.t)+'</div>':'')+'Page '+p+' of '+N;
- const t='Contents • '+Math.round(p/N*100)+'%';$('ctx').textContent=t;$('ctx2').textContent=t;
- cbt.style.setProperty('--rw',(100-f*100)+'%');$('pgpill').textContent=p+' of '+N});
+ const N=doc.numPages,W=Math.max(120,Math.min(innerWidth*.92,460)-40),f=Math.max(0,Math.min(1,sd.f0+dx/W)),p=Math.round(1+f*(N-1));sd.p=p;
+ const t='Page '+p+' of '+N;$('ctx').textContent=t;$('ctx2').textContent=t;
+ cbt.style.setProperty('--rw',(100-f*100)+'%')});
 function sEnd(){if(!sd)return;const was=sd.on,p=sd.p;sd=null;if(!was)return;
  sblock=true;setTimeout(()=>sblock=false,150);drag=false;document.body.classList.remove('scrubbing');show(p);
  setTimeout(()=>{if(doc)pageChanged()},450)}
